@@ -10,17 +10,18 @@ def calculate_means(df: pd.DataFrame):
         return df.mean()
 
 
-def calculate_label_ranges(df: pd.DataFrame, var_name: str):
+def calculate_tag_ranges(df: pd.DataFrame, var_name: str):
         mean = mean_df[var_name]
         max_value = df[var_name].max()
         min_value = df[var_name].min()
 
-        delta = max_value - min_value
-
         mid_rangemax = max_value - (max_value - mean)/2
         mid_rangemin = min_value + (mean - min_value)/2
         
-        ranges_dict = {"Low": [min_value, mid_rangemin],"Medium": [mid_rangemin, mid_rangemax], "High": [mid_rangemax, max_value]}
+        low_range_max = max_value - (max_value - min_value)/2
+        high_range_min = max_value - (max_value - min_value)/3
+        
+        ranges_dict = {"Low": [min_value, low_range_max],"Medium": [mid_rangemin, mid_rangemax], "High": [high_range_min, max_value]}
 
         return ranges_dict
 
@@ -29,7 +30,7 @@ def set_tags(df: pd.DataFrame):
         tags = dict()
 
         for row in df.keys()[:-1]:
-                tags[row] = calculate_label_ranges(df, row)
+                tags[row] = calculate_tag_ranges(df, row)
                 
         return tags
 
@@ -57,7 +58,7 @@ def fuzzify_dataset(df: pd.DataFrame, tags_ranges: dict):
         for key in keys[:-1]:
                 tag_range = tags_ranges[key]
                 fuzzy_df[key] = df[key].apply(lambda x: select_tag_for_key(x, tag_range))
-               
+                
         return fuzzy_df
 
 def get_training_df(df: pd.DataFrame, types: list):
@@ -87,9 +88,21 @@ def get_training_rules(df: pd.DataFrame, tags_ranges: dict, types: list):
         return rules_df
 
 def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
-        merge = pd.merge(fuzzy_df, rules_df, how = 'inner', on = list(fuzzy_df.columns))
+        merge_in  = pd.merge(fuzzy_df, rules_df, how = 'outer', on = list(fuzzy_df.columns))
         
-        return merge
+#        for i, row in fuzzy_df.iterrows():
+#                match_list = []
+#        
+#                for j, rule in rules_df.iterrows():                
+#                        if tuple(row) == tuple(rule[:-1]):
+#                                match_list.append(rule)
+#                                #print(f"{tuple(row)}\n{tuple(rule)}\n\n")
+#                
+#                print(f"row {tuple(row)}: {len(match_list)} matches")
+#                if len(match_list) > 1:
+#                        print(match_list)
+        
+        return merge_in
 
 
 pd.set_option('display.max_rows', None)
@@ -99,7 +112,7 @@ df = load_data("glass.csv")
 mean_df = calculate_means(df)
 
 tags_ranges = set_tags(df)
-#print(tags_ranges)
+print(tags_ranges)
 
 types = range(1,8)
 rules_training = get_training_rules(df, tags_ranges, types)
@@ -107,7 +120,7 @@ print(rules_training)
 
 #print(df.columns)
 fuzzy_df = fuzzify_dataset(df, tags_ranges)
-print(fuzzy_df)
+#print(fuzzy_df)
 
-classified_df = classify_dataset(fuzzy_df, rules_training)
-print(classified_df)
+#classified_df = classify_dataset(fuzzy_df, rules_training)
+#print(classified_df)
