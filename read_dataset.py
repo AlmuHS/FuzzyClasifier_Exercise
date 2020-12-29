@@ -33,20 +33,7 @@ def set_tags(df: pd.DataFrame):
                 
         return tags
 
-def get_training_df(df: pd.DataFrame, types: list):
-        training_set = []
-
-        for type in types:
-                rows_type = df.loc[df['Type'] == type]
-                filtered_rows = rows_type[1:10]
-
-                training_set.append(filtered_rows)
-
-        training_df = pd.concat(training_set)    
-        
-        return training_df    
-
-def select_tag_for_key(key: str, value: float, tag_range: list):
+def select_tag_for_key(value: float, tag_range: list):
         tag_range_high = tag_range["High"]
         tag_range_medium = tag_range["Medium"]
         tag_range_low = tag_range["Low"]
@@ -63,58 +50,61 @@ def select_tag_for_key(key: str, value: float, tag_range: list):
         return tag
 
 
-def fuzzify_dataset(df: pd.DataFrame, tags_ranges):
-        keys = df.keys()
-        fuzzy_df = pd.DataFrame(columns = df.columns[:-1])
-
-        print(len(fuzzy_df.columns))
+def fuzzify_dataset(df: pd.DataFrame, tags_ranges: dict):
+        keys = df.columns
+        fuzzy_df = pd.DataFrame()
 
         for key in keys[:-1]:
-                key_column = training_df[key]
                 tag_range = tags_ranges[key]
-                
-                for i, value in enumerate(key_column):      
-                        fuzzy_df.at[i, key] = select_tag_for_key(key, value, tag_range)
-
+                fuzzy_df[key] = df[key].apply(lambda x: select_tag_for_key(x, tag_range))
+        
+               
         return fuzzy_df
 
+def get_training_df(df: pd.DataFrame, types: list):
+        training_set = []
 
-def get_training_rules(training_df: pd.DataFrame, tags_ranges: dict):
-        keys = training_df.keys()
-        rules_df = pd.DataFrame(columns = keys)
+        for type in types:   
+                rows_type = df.loc[df['Type'] == type]
+        
+                filtered_rows = rows_type[1:10]
 
-        rules_df = fuzzify_dataset(df, tags_ranges)
+                training_set.append(filtered_rows)
+
+        training_df = pd.concat(training_set) 
+        
+        return training_df    
+
+def get_training_rules(df: pd.DataFrame, tags_ranges: dict, types: list):
+        keys = df.keys()
+
+        training_df = get_training_df(df, types) 
+        rules_df = fuzzify_dataset(training_df, tags_ranges)
        
-        for i, type in enumerate(training_df['Type']):
-                rules_df.at[i, "Type"] = training_df.iloc[i]["Type"]
+        rules_df['Type'] = training_df['Type'].copy(deep=False)
        
         return rules_df
 
 def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
         print(fuzzy_df.columns)
         print(rules_df.columns)
-        
-        
-        #print(merge)
-                
-        
+
+        merge = pd.merge(rules_df, fuzzy_df, how = 'inner', on = list(fuzzy_df.columns))
+        print(merge)
 
 
 df = load_data("glass.csv")
 mean_df = calculate_means(df)
 
 tags_ranges = set_tags(df)
-print(tags_ranges)
+#print(tags_ranges)
 
 types = range(1,8)
-
-training_df = get_training_df(df, types)
-rules_training = get_training_rules(training_df, tags_ranges)
-
-#print(rules_training)
+rules_training = get_training_rules(df, tags_ranges, types)
+print(rules_training)
 
 #print(df.columns)
 fuzzy_df = fuzzify_dataset(df, tags_ranges)
-#print(fuzzy_df)
+print(fuzzy_df)
 
-#classify_dataset(fuzzy_df, rules_training)
+classify_dataset(fuzzy_df, rules_training)
