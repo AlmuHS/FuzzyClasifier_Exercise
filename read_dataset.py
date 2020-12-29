@@ -65,7 +65,9 @@ def select_tag_for_key(key: str, value: float, tag_range: list):
 
 def fuzzify_dataset(df: pd.DataFrame, tags_ranges):
         keys = df.keys()
-        fuzzy_df = pd.DataFrame(columns = keys[:-1])
+        fuzzy_df = pd.DataFrame(columns = df.columns[:-1])
+
+        print(len(fuzzy_df.columns))
 
         for key in keys[:-1]:
                 key_column = training_df[key]
@@ -89,16 +91,11 @@ def get_training_rules(training_df: pd.DataFrame, tags_ranges: dict):
         return rules_df
 
 def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
-        rules_wo_type = rules_df[[0:len(rules_df)-1]]
-
         print(fuzzy_df.columns)
-        print(rules_wo_type.columns)
-
+        print(rules_df.columns)
         
-
-        merge = pd.merge(fuzzy_df, rules_df, how = 'inner', on = list(fuzzy_df.columns))
         
-        print(merge)
+        #print(merge)
                 
         
 
@@ -116,7 +113,8 @@ rules_training = get_training_rules(training_df, tags_ranges)
 
 #print(rules_training)
 
+#print(df.columns)
 fuzzy_df = fuzzify_dataset(df, tags_ranges)
 #print(fuzzy_df)
 
-classify_dataset(fuzzy_df, rules_training)
+#classify_dataset(fuzzy_df, rules_training)
