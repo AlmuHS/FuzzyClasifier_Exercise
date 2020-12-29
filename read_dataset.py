@@ -57,7 +57,6 @@ def fuzzify_dataset(df: pd.DataFrame, tags_ranges: dict):
         for key in keys[:-1]:
                 tag_range = tags_ranges[key]
                 fuzzy_df[key] = df[key].apply(lambda x: select_tag_for_key(x, tag_range))
-        
                
         return fuzzy_df
 
@@ -67,7 +66,7 @@ def get_training_df(df: pd.DataFrame, types: list):
         for type in types:   
                 rows_type = df.loc[df['Type'] == type]
         
-                filtered_rows = rows_type[1:10]
+                filtered_rows = rows_type#[1:10]
 
                 training_set.append(filtered_rows)
 
@@ -83,14 +82,17 @@ def get_training_rules(df: pd.DataFrame, tags_ranges: dict, types: list):
        
         rules_df['Type'] = training_df['Type'].copy(deep=False)
        
+        rules_df.drop_duplicates(keep=False, inplace=True)
+       
         return rules_df
 
 def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
-        print(fuzzy_df.columns)
-        print(rules_df.columns)
+        merge = pd.merge(fuzzy_df, rules_df, how = 'inner', on = list(fuzzy_df.columns))
+        
+        return merge
 
-        merge = pd.merge(rules_df, fuzzy_df, how = 'inner', on = list(fuzzy_df.columns))
-        print(merge)
+
+pd.set_option('display.max_rows', None)
 
 
 df = load_data("glass.csv")
@@ -107,4 +109,5 @@ print(rules_training)
 fuzzy_df = fuzzify_dataset(df, tags_ranges)
 print(fuzzy_df)
 
-classify_dataset(fuzzy_df, rules_training)
+classified_df = classify_dataset(fuzzy_df, rules_training)
+print(classified_df)
