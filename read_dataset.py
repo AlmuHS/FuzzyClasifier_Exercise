@@ -111,12 +111,10 @@ def get_training_rules(df: pd.DataFrame, tags_ranges: dict, types: list):
        
         rules_df['Type'] = training_df['Type'].copy(deep=False)
        
-        rules_df.drop_duplicates(keep=False, inplace=True)
-       
         return rules_df
 
 def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
-        merge_in  = pd.merge(fuzzy_df, rules_df, how = 'outer', on = list(fuzzy_df.columns))
+        merge_in  = pd.merge(fuzzy_df, rules_df, how = 'outer', on = list(rules_df.columns[:-1]))
         
         for i, row in fuzzy_df.iterrows():
                 match_list = []
@@ -124,11 +122,10 @@ def classify_dataset(fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
                 for j, rule in rules_df.iterrows():                
                         if tuple(row) == tuple(rule[:-1]):
                                 match_list.append(rule)
-                                #print(f"{tuple(row)}\n{tuple(rule)}\n\n")
                 
                 print(f"row {tuple(row)}: {len(match_list)} matches")
-                if len(match_list) > 1:
-                        print(match_list)
+                #if len(match_list) > 1:
+                #        print(match_list)
         
         return merge_in
 
