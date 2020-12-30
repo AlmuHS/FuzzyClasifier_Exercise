@@ -18,8 +18,10 @@ def calculate_tag_ranges(df: pd.DataFrame, var_name: str):
         mid_rangemax = max_value - (max_value - mean)/2
         mid_rangemin = min_value + (mean - min_value)/2
         
-        low_range_max = max_value - (max_value - min_value)/2
-        high_range_min = max_value - (max_value - min_value)/3
+        #high_range_min = min_value + (max_value - mid_rangemax/2)
+        
+        low_range_max = max_value - (max_value - min_value)/3   
+        high_range_min = max_value - (max_value - min_value)/2
         
         ranges_dict = {"Low": [min_value, low_range_max],"Medium": [mid_rangemin, mid_rangemax], "High": [high_range_min, max_value]}
 
