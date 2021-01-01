@@ -26,8 +26,6 @@ class Classifier:
                          how='left', on=list(self.fuzzy_df.columns), indicator='Exist').loc[lambda x: x['Exist'] != 'both']
 
         # print(merge)
-        TP_value = len(merge)
-
-        print(TP_value)
+        TP_value = len(self.fuzzy_df) - len(merge)
 
         return TP_value

@@ -9,50 +9,61 @@ class RulesGenerator:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-    def get_training_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
+    def get_initial_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
         fuzzifier = FuzGen(training_df)
-        rules_df = fuzzifier.fuzzify_dataset(tags_ranges)
+        rules_df = fuzzifier.fuzzify_rules(tags_ranges)
 
         return rules_df
 
-    def gen_rules_set(self, training_set: list, tags_ranges: dict):
-        rules_set = []
+    def learn_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
+        examples_set = self.get_initial_rules(training_df, tags_ranges)
+        examples_set.drop_duplicates(inplace=True, subset=self.df.columns)
 
-        for training_df in training_set:
-            rules_df = self.get_training_rules(training_df, tags_ranges)
+        dup_rules = pd.merge(examples_set, examples_set, how='inner',
+                             on=list(self.df.columns))
 
-            rules_set.append(rules_df)
+        examples_set.drop('Asociation', inplace=True, axis=1)
+       # print(dup_rules)
 
-        return rules_set
+        # min_overleap_set = examples_set.groupby(
+        #     list(examples_set.columns[:-2]))[['Overleap']].min()
+
+        # print(min_overleap_set)
+
+        return examples_set
 
     def start_rules_training(self):
         gen_tags = gt(self.df)
         tags_ranges = gen_tags.set_tags()
 
         parts_gen = Part(self.df)
-        parts_gen.gen_partition_set()
-        test_df = parts_gen.get_test_df()
-
-        training_set = parts_gen.get_training_set()
-        rules_set = self.gen_rules_set(training_set, tags_ranges)
-
-        print(len(rules_set))
-
-        fuzzifier = FuzGen(test_df)
-        fuzzy_df = fuzzifier.fuzzify_dataset(tags_ranges)
+        partition_set = parts_gen.gen_partition_set()
 
         best_accuraccy = 0
-        best_rulesset = 0
+        best_rulesset = pd.DataFrame()
 
-        for i, rules_df in enumerate(rules_set):
-            classifier = Classifier(fuzzy_df, rules_df)
+        for i in range(0, len(partition_set)-1):
+            test_set = partition_set[i]
+            training_set = partition_set.copy()
+            training_set.pop(i)
+
+            training_df = pd.concat(training_set)
+
+            fuzzifier = FuzGen(test_set)
+            test_df = fuzzifier.fuzzify_data(tags_ranges)
+
+            rules_df = self.learn_rules(training_df, tags_ranges)
+
+            classifier = Classifier(test_df, rules_df)
             classifier.classify_dataset()
 
             TP_value = classifier.verify_classification()
-            accuraccy = (TP_value / len(fuzzy_df))
+            accuraccy = (TP_value / len(test_df))
+
+            print(accuraccy)
 
             if accuraccy > best_accuraccy:
                 best_accuraccy = accuraccy
-                best_rulesset = i
+                best_rulesset = rules_df
 
-        return rules_set[best_rulesset]
+        return best_rulesset

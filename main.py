@@ -1,5 +1,4 @@
 import pandas as pd
-
 from rules_gen import RulesGenerator as RulesGen
 
 
