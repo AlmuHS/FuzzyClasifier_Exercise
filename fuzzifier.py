@@ -15,80 +15,45 @@ class Fuzzyfier:
     def _check_range(self, value: float, min: float, max: float):
         return ((value >= min) and (value <= max))
 
-    def calculate_asociation_degree(self, tag_range: list, tag_list: list, value: float):
-        tag = tag_list[0]
-        tag_range_low = tag_range["Low"]
+    def calculate_asociation_degree(self, tag: str, value: float, tag_range: list):
+        t_range_left = tag_range[0]
+        t_range_right = tag_range[1]
 
-        if len(tag_list) == 1:
-            tag_range_low_left = tag_range_low[0]
-            tag_range_low_right = tag_range_low[1]
+        t_range_size = t_range_right - t_range_left
 
-            range_size = tag_range_low_right - tag_range_low_left
+        asociation_degree = (value - t_range_left)/t_range_size
 
-            distance_left = (value - tag_range_low_left)
-            asociation_degree = distance_left/range_size
+        return asociation_degree
 
-        else:
-            min_degree = 1
+    def select_tag_for_key(self, value: float, tags_ranges: list):
+        tag_range_high = tags_ranges["High"]
+        tag_range_medium = tags_ranges["Medium"]
+        tag_range_low = tags_ranges["Low"]
 
-            for tag1, tag2 in pairwise(tag_list):
-                t_range1 = tag_range[tag1]
-                t_range2 = tag_range[tag2]
-
-                t_range1_left = t_range1[0]
-                t_range2_left = t_range2[0]
-
-                t_range1_right = t_range1[1]
-                t_range2_right = t_range2[1]
-
-                range1_size = t_range1_right - t_range1_left
-                range2_size = t_range2_right - t_range2_left
-
-                asociation_degree1 = (t_range1_right - value)/range1_size
-                asociation_degree2 = (value - t_range2_left)/range2_size
-
-                if asociation_degree1 < min_degree:
-                    min_degree = asociation_degree1
-                    tag = tag1
-
-                if asociation_degree2 < min_degree:
-                    min_degree = asociation_degree2
-                    tag = tag2
-
-            asociation_degree = min_degree
-
-        return tag, asociation_degree
-
-    def select_tag_for_key(self, value: float, tag_range: list):
-        tag_range_high = tag_range["High"]
-        tag_range_medium = tag_range["Medium"]
-        tag_range_low = tag_range["Low"]
-
-        tag_list = []
-        tag = ""
+        tag = "Low"
 
         if self._check_range(value, tag_range_low[0], tag_range_low[1]):
-            tag_list.append("Low")
+            tag = "Low"
 
         if self._check_range(value, tag_range_medium[0], tag_range_medium[1]):
-            tag_list.append("Medium")
+            tag = "Medium"
 
         if self._check_range(value, tag_range_high[0], tag_range_high[1]):
-            tag_list.append("High")
+            tag = "High"
 
-        tag = tag_list[0]
+        tag_range = tags_ranges[tag]
 
-        tag, overleap_degree = self.calculate_asociation_degree(
-            tag_range, tag_list, value)
+        asociation_degree = self.calculate_asociation_degree(
+            tag, value, tag_range)
 
-        return tag, overleap_degree
+        return tag, asociation_degree
 
     def select_tag_for_data(self, value: float, tag_range: list):
         tag, key = self.select_tag_for_key(value, tag_range)
 
         return tag
 
-    def calculate_row_overleap(self, row: pd.DataFrame):
+    def calculate_row_weight(self, row: pd.DataFrame):
         total_overleap = 1
         keys = row.keys()
         modified_row = row
@@ -96,6 +61,7 @@ class Fuzzyfier:
         for key in keys:
             overleap = row[key][1]
             total_overleap *= overleap
+
             modified_row[key] = row[key][0]
 
         modified_row['Asociation'] = total_overleap
@@ -112,7 +78,7 @@ class Fuzzyfier:
                 lambda x: self.select_tag_for_key(x, tag_range))
 
         fuzzy_df = fuzzy_df.apply(
-            lambda x: self.calculate_row_overleap(x), axis=1)
+            lambda x: self.calculate_row_weight(x), axis=1)
 
         fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
 
