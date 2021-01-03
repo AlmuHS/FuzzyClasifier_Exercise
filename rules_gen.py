@@ -11,26 +11,38 @@ class RulesGenerator:
 
     def get_initial_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
         fuzzifier = FuzGen(training_df)
-        rules_df = fuzzifier.fuzzify_rules(tags_ranges)
+        rules_df = fuzzifier.fuzzify_data(tags_ranges)
 
         return rules_df
 
     def learn_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
         examples_set = self.get_initial_rules(training_df, tags_ranges)
-        examples_set.drop_duplicates(inplace=True, subset=self.df.columns)
 
-        dup_rules = pd.merge(examples_set, examples_set, how='inner',
-                             on=list(self.df.columns))
+        best_rules_df = pd.DataFrame(columns=examples_set.columns)
 
-        examples_set.drop('Asociation', inplace=True, axis=1)
-       # print(dup_rules)
+        '''
+        Select the rules most repeated in the examples set
+        Group the rules which match in all their terms and, for each of them, select the classtype most repeated for this group
+        '''
+        for values, dup_terms_sg in examples_set.groupby(examples_set.columns.tolist()[:-1], as_index=False):
 
-        # min_overleap_set = examples_set.groupby(
-        #     list(examples_set.columns[:-2]))[['Overleap']].min()
+            max_repeat = 0
+            best_rule = type(dup_terms_sg)
 
-        # print(min_overleap_set)
+            '''
+            For each group of rules with same predecesor terms, select the class most repeated in its rules subgroup
+            '''
 
-        return examples_set
+            for values2, dup_types_sg in dup_terms_sg.groupby(examples_set.columns.tolist(), as_index=False):
+                num_repeat = len(dup_types_sg)
+
+                if num_repeat > max_repeat:
+                    max_repeat = num_repeat
+                    best_rule = dup_terms_sg
+
+            best_rules_df = pd.concat([best_rules_df, best_rule])
+
+        return best_rules_df
 
     def start_rules_training(self):
         gen_tags = gt(self.df)
@@ -45,7 +57,7 @@ class RulesGenerator:
         for i in range(0, len(partition_set)-1):
             test_set = partition_set[i]
             training_set = partition_set.copy()
-            training_set.pop(i)
+            training_set.pop(i)  # Remove test partition from training_set
 
             training_df = pd.concat(training_set)
 
@@ -53,17 +65,20 @@ class RulesGenerator:
             test_df = fuzzifier.fuzzify_data(tags_ranges)
 
             rules_df = self.learn_rules(training_df, tags_ranges)
+            rules_df_ext = pd.concat([rules_df, best_rulesset])
 
-            classifier = Classifier(test_df, rules_df)
+            classifier = Classifier(test_df, rules_df_ext)
             classifier.classify_dataset()
 
-            TP_value = classifier.verify_classification()
+            TP_value, matched_rules = classifier.verify_classification()
             accuraccy = (TP_value / len(test_df))
+            best_rulesset = pd.concat([best_rulesset, matched_rules])
+
+            # print(best_rulesset)
 
             print(accuraccy)
 
             if accuraccy > best_accuraccy:
                 best_accuraccy = accuraccy
-                best_rulesset = rules_df
 
         return best_rulesset
