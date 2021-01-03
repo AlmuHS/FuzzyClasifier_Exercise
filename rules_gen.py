@@ -16,15 +16,15 @@ class RulesGenerator:
         return rules_df
 
     def learn_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
-        examples_set = self.get_initial_rules(training_df, tags_ranges)
+        #training_df = self.get_initial_rules(training_df, tags_ranges)
 
-        best_rules_df = pd.DataFrame(columns=examples_set.columns)
+        best_rules_df = pd.DataFrame(columns=training_df.columns)
 
         '''
         Select the rules most repeated in the examples set
         Group the rules which match in all their terms and, for each of them, select the classtype most repeated for this group
         '''
-        for values, dup_terms_sg in examples_set.groupby(examples_set.columns.tolist()[:-1], as_index=False):
+        for values, dup_terms_sg in training_df.groupby(training_df.columns.tolist()[:-1], as_index=False):
 
             max_repeat = 0
             best_rule = type(dup_terms_sg)
@@ -33,7 +33,7 @@ class RulesGenerator:
             For each group of rules with same predecesor terms, select the class most repeated in its rules subgroup
             '''
 
-            for values2, dup_types_sg in dup_terms_sg.groupby(examples_set.columns.tolist(), as_index=False):
+            for values2, dup_types_sg in dup_terms_sg.groupby(training_df.columns.tolist(), as_index=False):
                 num_repeat = len(dup_types_sg)
 
                 if num_repeat > max_repeat:
@@ -53,6 +53,7 @@ class RulesGenerator:
 
         best_accuraccy = 0
         best_rulesset = pd.DataFrame()
+        best_rulesset = self.get_initial_rules(self.df, tags_ranges)
 
         for i in range(0, len(partition_set)-1):
             test_set = partition_set[i]
@@ -64,17 +65,19 @@ class RulesGenerator:
             fuzzifier = FuzGen(test_set)
             test_df = fuzzifier.fuzzify_data(tags_ranges)
 
-            rules_df = self.learn_rules(training_df, tags_ranges)
-            rules_df_ext = pd.concat([rules_df, best_rulesset])
+            rules_df = self.learn_rules(best_rulesset, tags_ranges)
 
-            classifier = Classifier(test_df, rules_df_ext)
+            classifier = Classifier(training_df, rules_df)
+            classifier.classify_dataset()
+
+            TP_value, matched_rules = classifier.verify_classification()
+            best_rulesset = pd.concat([best_rulesset, matched_rules])
+
+            classifier = Classifier(test_df, best_rulesset)
             classifier.classify_dataset()
 
             TP_value, matched_rules = classifier.verify_classification()
             accuraccy = (TP_value / len(test_df))
-            best_rulesset = pd.concat([best_rulesset, matched_rules])
-
-            # print(best_rulesset)
 
             print(accuraccy)
 
