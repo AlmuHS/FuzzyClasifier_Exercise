@@ -60,18 +60,17 @@ class RulesGenerator:
             training_set = partition_set.copy()
             training_set.pop(i)  # Remove test partition from training_set
 
-            training_df = pd.concat(training_set)
+            for training_df in training_set:
+                fuzzifier = FuzGen(test_set)
+                test_df = fuzzifier.fuzzify_data(tags_ranges)
 
-            fuzzifier = FuzGen(test_set)
-            test_df = fuzzifier.fuzzify_data(tags_ranges)
+                rules_df = self.learn_rules(best_rulesset, tags_ranges)
 
-            rules_df = self.learn_rules(best_rulesset, tags_ranges)
+                classifier = Classifier(training_df, rules_df)
+                classifier.classify_dataset()
 
-            classifier = Classifier(training_df, rules_df)
-            classifier.classify_dataset()
-
-            TP_value, matched_rules = classifier.verify_classification()
-            best_rulesset = pd.concat([best_rulesset, matched_rules])
+                TP_value, matched_rules = classifier.verify_classification()
+                best_rulesset = pd.concat([best_rulesset, matched_rules])
 
             classifier = Classifier(test_df, best_rulesset)
             classifier.classify_dataset()
