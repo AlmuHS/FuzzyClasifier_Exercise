@@ -8,7 +8,7 @@ class Classifier:
 
     def select_type(self, row: tuple):
         for i, rule in self.rules_df.iterrows():
-            if tuple(row[:-1]) == tuple(rule[:-1]):
+            if tuple(row[:-1]) == tuple(rule[:-2]):
                 return rule
 
         row['Type'] = -1
@@ -22,14 +22,9 @@ class Classifier:
 
     def verify_classification(self):
 
-        merge = pd.merge(self.fuzzy_df, self.classified_df,
-                         how='left', on=list(self.fuzzy_df.columns), indicator='Exist').loc[lambda x:x['Exist'] != 'both']
+        matched = self.fuzzy_df[self.fuzzy_df.isin(
+            self.classified_df)].dropna()
 
-        matched = pd.merge(self.fuzzy_df, self.classified_df,
-                           how='left', on=list(self.fuzzy_df.columns), indicator='Exist').loc[lambda x:x['Exist'] == 'both']
-
-        del matched['Exist']
-
-        TP_value = len(self.fuzzy_df) - len(merge)
+        TP_value = len(matched)
 
         return TP_value, matched
