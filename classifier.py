@@ -22,9 +22,16 @@ class Classifier:
 
     def verify_classification(self):
 
-        matched = self.fuzzy_df[self.fuzzy_df.isin(
-            self.classified_df)].dropna()
+        # matched = self.fuzzy_df[self.fuzzy_df.isin(
+        #     self.classified_df)].dropna()
 
-        TP_value = len(matched)
+        # TP_value = len(matched)
+
+        matched = pd.merge(self.fuzzy_df, self.classified_df,
+                           how='left', on=list(self.fuzzy_df.columns), indicator='Exist').loc[lambda x:x['Exist'] != 'both']
+
+        del matched['Exist']
+
+        TP_value = len(self.fuzzy_df) - len(matched)
 
         return TP_value, matched

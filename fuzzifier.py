@@ -6,43 +6,113 @@ class Fuzzyfier:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-    '''
-    Check if a single value exists in a certain range
-    Receives as input the two limits of the range, and the value to check
-    Returns True if the number exists in the range, False if not
-    '''
+    def calculate_owning_degree(self, value: float, tag_range: list):
+        own_degree = 0
+        tag_limit_left = tag_range[0]
+        tag_limit_right = tag_range[1]
+        middle_value = tag_limit_right/2
 
-    def _check_range(self, value: float, min: float, max: float):
-        return ((value >= min) and (value <= max))
+        if value < tag_limit_left:
+            own_degree = 0
+        elif value > tag_limit_left and value <= middle_value:
+            own_degree = (value - tag_limit_left) / \
+                (middle_value - tag_limit_left)
+        elif value > middle_value and value < tag_limit_right:
+            own_degree = (tag_limit_right - value) / \
+                (tag_limit_right - middle_value)
+        elif value > tag_limit_right:
+            own_degree = 0
+
+        return own_degree
 
     '''
     Select the best tag for a key, based in its discrete value and the ranges of each tag.
-    Compare the discrete value with the range of each tag, finding the minimal tag in which this value matches.
-
-    For the tag selected, calculates a asociation degree,
-    which measure the similarity between the discrete value and the tag selected
+    Compare the discrete value with the range of each tag, calculation the owning degree for each.
+    
+    Select the tag with the higher association degree. 
     '''
 
-    def select_tag_for_key(self, value: float, tags_ranges: list):
-        tag_range_high = tags_ranges["High"]
-        tag_range_medium = tags_ranges["Medium"]
-        tag_range_low = tags_ranges["Low"]
+    def select_tag_for_rule(self, value: float, tags_ranges: dict):
+        max_own_degree = 0
+        best_tag = "Low"
 
-        tag = "Low"
+        for tag in ["Low", "Medium", "High"]:
+            tag_range = tags_ranges[tag]
 
-        if self._check_range(value, tag_range_low[0], tag_range_low[1]):
-            tag = "Low"
+            own_degree = self.calculate_owning_degree(
+                value, tag_range)
 
-        if self._check_range(value, tag_range_medium[0], tag_range_medium[1]):
-            tag = "Medium"
+            if own_degree > max_own_degree:
+                max_own_degree = own_degree
+                best_tag = tag
 
-        if self._check_range(value, tag_range_high[0], tag_range_high[1]):
-            tag = "High"
+        return best_tag, max_own_degree
+
+    def calculate_rule_owning_degree(self, rule: pd.DataFrame):
+        total_own_degree = 0
+
+        for column in rule.keys()[:-1]:
+            term = rule[column]
+            tag = term[0]
+            own_degree = term[1]
+
+            total_own_degree += own_degree
+            rule[column] = tag
+
+        rule["Owning Degree"] = total_own_degree
+
+        return rule
+
+    def select_tag_for_data(self, value: float, tags_ranges: dict):
+        tag, degree = self.select_tag_for_rule(value, tags_ranges)
 
         return tag
 
+    def calculate_rules_certainty_degree(self, rules_df: pd.DataFrame):
+        for i, rule in rules_df.iterrows():
+            terms = rule[:-2]
+            rule_filtered = rule[:-1]
+
+            own_degree_wo_class = rules_df.groupby(
+                terms)["Owning Degree"].sum()
+            own_degree_class = rules_df.groupby(
+                rule_filtered)["Owning Degree"].sum()
+
+            certain_degree = own_degree_class/own_degree_wo_class
+
+            print(certain_degree)
+
+            rules_df["Certain Degree"] = certain_degree
+
+        return rules_df
+
     '''
-    Fuzzify a dataset, to transform it in a classification set. 
+    Fuzzify a examples set, to transform it in a rules set.
+    For each row, assign a fuzzy tag for each term
+    '''
+
+    def fuzzify_rules(self, tags_ranges: dict):
+        keys = self.df.columns
+        fuzzy_df = pd.DataFrame()
+
+        for key in keys[:-1]:
+            tag_range = tags_ranges[key]
+            fuzzy_df[key] = self.df[key].apply(
+                lambda x: self.select_tag_for_rule(x, tag_range))
+
+        fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
+
+        fuzzy_df = fuzzy_df.apply(
+            lambda x: self.calculate_rule_owning_degree(x), axis=1)
+
+        #fuzzy_df = self.calculate_rules_certainty_degree(fuzzy_df)
+
+        # print(fuzzy_df)
+
+        return fuzzy_df
+
+    '''
+    Fuzzify a examples set, to transform it in a rules set.
     For each row, assign a fuzzy tag for each term
     '''
 
@@ -53,7 +123,7 @@ class Fuzzyfier:
         for key in keys[:-1]:
             tag_range = tags_ranges[key]
             fuzzy_df[key] = self.df[key].apply(
-                lambda x: self.select_tag_for_key(x, tag_range))
+                lambda x: self.select_tag_for_data(x, tag_range))
 
         fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
 
