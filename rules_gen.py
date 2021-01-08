@@ -27,16 +27,14 @@ class RulesGenerator:
         Group the rules which match in all their terms and, for each of them, select the classtype most repeated for this group
         '''
         for values, dup_terms_sg in training_df.groupby(training_df.columns.tolist()[:-2], as_index=False):
+            type_mode = dup_terms_sg['Type'].mode()
 
-            max_own = dup_terms_sg['Owning Degree'].max()
+            best_rule = dup_terms_sg[dup_terms_sg['Type'].isin(
+                type_mode)].iloc[0]
 
-            # type_mode = dup_terms_sg['Type'].mode()
-
-            # best_rule = dup_terms_sg[dup_terms_sg['Type'].isin(
-            #     type_mode)].iloc[0]
-
-            best_rule = dup_terms_sg[dup_terms_sg['Owning Degree']
-                                     == max_own].iloc[0]
+            # max_own = dup_terms_sg['Owning Degree'].max()
+            # best_rule = dup_terms_sg[dup_terms_sg['Owning Degree']
+            #                          == max_own].iloc[0]
 
             best_rules_df = best_rules_df.append(best_rule)
 
@@ -89,8 +87,6 @@ class RulesGenerator:
 
                 # Check results of classification: matched rules and positives rate
                 TP_value, matched_rules = classifier.verify_classification()
-
-                # print(TP_value)
 
                 # Concatenate the matched rules to the current best rules set
                 best_rulesset = pd.concat([best_rulesset, matched_rules])

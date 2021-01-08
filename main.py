@@ -20,8 +20,6 @@ rules_gen = RulesGen(df)
 best_rules_gen = rules_gen.start_rules_training()
 fuzzy_data = FuzGen(df).fuzzify_data(tags_ranges)
 
-print(best_rules_gen)
-
 classifier = Classifier(fuzzy_data, best_rules_gen)
 classifier.classify_dataset()
 TP_value, results = classifier.verify_classification()
@@ -29,3 +27,4 @@ TP_value, results = classifier.verify_classification()
 accuraccy = TP_value/len(df)
 
 print(accuraccy)
+print(best_rules_gen)

@@ -37,6 +37,4 @@ class Classifier:
 
         TP_value = len(matched)
 
-        print(TP_value)
-
         return TP_value, matched
