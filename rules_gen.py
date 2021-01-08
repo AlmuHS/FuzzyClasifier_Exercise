@@ -75,6 +75,23 @@ class RulesGenerator:
 
         return best_rules_df
 
+    '''
+    Using cross validation, generates a reduced rules set.
+
+    Split the examples set in 5 partitions: 4 for training, 1 for test.
+    Starting with the full examples set as rules set, execute 4 iterations: one for each training set
+    dealing each training set with the rules set.
+
+    In each iteration, recover the matched rules to feedback the rules set. Finally, the rules set is reduced, 
+    to remove the duplicated rules, and dealed with the test set. 
+
+    This process is repeated 4 times, selecting a different partition as test set in each.
+    The training set will be updated too, using the rest of partitions which are not the test set.
+    After each deal with test set, the accuraccy is calculated and showed by screen.
+
+    Returns the minimal rules set, got after all iterations
+    '''
+
     def start_rules_training(self):
 
         # Generate the tags for the values range
@@ -140,7 +157,7 @@ class RulesGenerator:
             # Check classification results
             TP_value, matched_rules = classifier.verify_classification()
 
-            # Calculate accuraccy
+            # Calculate accuraccy, as the division between the positives rate (matches) and the length of test set
             accuraccy = (TP_value / len(test_df))
 
             print(accuraccy)
