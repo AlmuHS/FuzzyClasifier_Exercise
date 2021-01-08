@@ -105,7 +105,9 @@ class RulesGenerator:
 
             '''
             Deal each training set with the rules set, to get the best rules set.
-            In each iteration, merge the matched rules with the previous rules set
+            In each iteration, accumulate the matched rules to the previous rules set.
+
+            This will allows to distinct the best rules, which have been matched more times
             '''
             for j, training_df in enumerate(training_set):
                 # Fuzzify training partition
@@ -122,8 +124,14 @@ class RulesGenerator:
                 # Concatenate the matched rules to the current best rules set
                 best_rulesset = pd.concat([best_rulesset, matched_rules])
 
-                # Filter the best rules, removing repeated antecesors
-                best_rulesset = self.learn_rules(best_rulesset, tags_ranges)
+            '''
+            Once get the matched rules over the initial set, test the rules set over the test partition
+            Before this, apply a filter to select only a rule for each antecesors set, based in the matches
+            got from the training
+            '''
+
+            # Filter the best rules, removing repeated antecesors
+            best_rulesset = self.learn_rules(best_rulesset, tags_ranges)
 
             # Try to classify the test set with the rules set get from training
             classifier = Classifier(test_df, best_rulesset)
