@@ -47,7 +47,7 @@ class RulesGenerator:
     From a rules set, select the best rules; selecting a unique rule for each predecesors set
     '''
 
-    def learn_rules(self, training_df: pd.DataFrame, tags_ranges: dict, initial=True):
+    def reduce_rules(self, training_df: pd.DataFrame, tags_ranges: dict, initial=True):
 
         if not initial:
             training_df = self.get_initial_rules(training_df, tags_ranges)
@@ -131,7 +131,7 @@ class RulesGenerator:
             '''
 
             # Filter the best rules, removing repeated antecesors
-            best_rulesset = self.learn_rules(best_rulesset, tags_ranges)
+            best_rulesset = self.reduce_rules(best_rulesset, tags_ranges)
 
             # Try to classify the test set with the rules set get from training
             classifier = Classifier(test_df, best_rulesset)
