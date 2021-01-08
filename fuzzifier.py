@@ -68,24 +68,6 @@ class Fuzzyfier:
 
         return tag
 
-    def calculate_rules_certainty_degree(self, rules_df: pd.DataFrame):
-        for i, rule in rules_df.iterrows():
-            terms = rule[:-2]
-            rule_filtered = rule[:-1]
-
-            own_degree_wo_class = rules_df.groupby(
-                terms)["Owning Degree"].sum()
-            own_degree_class = rules_df.groupby(
-                rule_filtered)["Owning Degree"].sum()
-
-            certain_degree = own_degree_class/own_degree_wo_class
-
-            print(certain_degree)
-
-            rules_df["Certain Degree"] = certain_degree
-
-        return rules_df
-
     '''
     Fuzzify a examples set, to transform it in a rules set.
     For each row, assign a fuzzy tag for each term
@@ -104,10 +86,6 @@ class Fuzzyfier:
 
         fuzzy_df = fuzzy_df.apply(
             lambda x: self.calculate_rule_owning_degree(x), axis=1)
-
-        #fuzzy_df = self.calculate_rules_certainty_degree(fuzzy_df)
-
-        # print(fuzzy_df)
 
         return fuzzy_df
 

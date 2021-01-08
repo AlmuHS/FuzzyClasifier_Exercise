@@ -9,11 +9,43 @@ class RulesGenerator:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
+    '''
+    Get a initial rules set, fuzzifying a examples set
+    '''
+
     def get_initial_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
         fuzzifier = FuzGen(training_df)
         rules_df = fuzzifier.fuzzify_rules(tags_ranges)
 
         return rules_df
+
+    '''
+    Calculate the Certainty Degree of a rule, based in the Owning Degree of the rules with the
+    same predecesors
+    '''
+
+    def calculate_certainty_degree(self, rule: pd.DataFrame, rules_gr: pd.DataFrame):
+        own_degree_class = 0
+
+        # Sum the Owning Degree of all rules with same predecesors and type
+        for i, rule_example in rules_gr.iterrows():
+            if tuple(rule_example[:-1]) == tuple(rule[:-1]):
+                own_degree_class += rule_example['Owning Degree']
+
+        # Sum the Owning Degree of all rules with same predecesors (ignoring type)
+        own_degree_wo_class = rules_gr['Owning Degree'].sum()
+
+        # Calculate the Certain Degree, dividing a sum with the another
+        certain_degree = own_degree_class/own_degree_wo_class
+
+        # Add a new column with the certain degree
+        rule["Certain Degree"] = certain_degree
+
+        return rule
+
+    '''
+    From a rules set, select the best rules; selecting a unique rule for each predecesors set
+    '''
 
     def learn_rules(self, training_df: pd.DataFrame, tags_ranges: dict, initial=True):
 
@@ -24,19 +56,22 @@ class RulesGenerator:
 
         '''
         Select the rules most repeated in the examples set
-        Group the rules which match in all their terms and, for each of them, select the classtype most repeated for this group
+        Group the rules which match in all their predecesors and, for each of them, select the rule with highest certain degree
         '''
         for values, dup_terms_sg in training_df.groupby(training_df.columns.tolist()[:-2], as_index=False):
-            type_mode = dup_terms_sg['Type'].mode()
 
-            best_rule = dup_terms_sg[dup_terms_sg['Type'].isin(
-                type_mode)].iloc[0]
+            # Calculate the Certain Degree for each rule of the group
+            certain_rules = dup_terms_sg.apply(
+                lambda x: self.calculate_certainty_degree(x, dup_terms_sg), axis=1)
 
-            # max_own = dup_terms_sg['Owning Degree'].max()
-            # best_rule = dup_terms_sg[dup_terms_sg['Owning Degree']
-            #                          == max_own].iloc[0]
+            # Select the rule with maximum Certain Degree
+            max_certain = certain_rules["Certain Degree"].max()
+            best_rule = certain_rules[certain_rules["Certain Degree"]
+                                      == max_certain].iloc[0]
 
-            best_rules_df = best_rules_df.append(best_rule)
+            # Add the selected rule to the best rules set. Remove the Certain Degree column before add the rule
+            best_rules_df = best_rules_df.append(
+                best_rule.drop(['Certain Degree']))
 
         return best_rules_df
 
@@ -73,10 +108,6 @@ class RulesGenerator:
             In each iteration, merge the matched rules with the previous rules set
             '''
             for j, training_df in enumerate(training_set):
-
-                # Filter the best rules, removing repeated antecesors
-                best_rulesset = self.learn_rules(best_rulesset, tags_ranges)
-
                 # Fuzzify training partition
                 fuzzifier = FuzGen(training_df)
                 fuzzy_df = fuzzifier.fuzzify_data(tags_ranges)
@@ -91,9 +122,8 @@ class RulesGenerator:
                 # Concatenate the matched rules to the current best rules set
                 best_rulesset = pd.concat([best_rulesset, matched_rules])
 
-                #best_rulesset = matched_rules
-                # best_rulesset = pd.merge(
-                #     best_rulesset, matched_rules, how='right')
+                # Filter the best rules, removing repeated antecesors
+                best_rulesset = self.learn_rules(best_rulesset, tags_ranges)
 
             # Try to classify the test set with the rules set get from training
             classifier = Classifier(test_df, best_rulesset)
