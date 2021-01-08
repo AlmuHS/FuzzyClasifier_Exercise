@@ -7,11 +7,22 @@ class Classifier:
         self.rules_df = rules_df
 
     def select_type(self, row: tuple):
+        # row_df = pd.DataFrame(row).drop(['Type'], axis=0)
+        # rules_filtered = self.rules_df.drop(['Owning Degree', 'Type'], axis=1)
+
+        # try:
+        #     match = self.rules_df[rules_filtered == row_df]
+        # except:
+        #     row['Type'] = -1
+        #     row['Owning Degree'] = 0
+
         for i, rule in self.rules_df.iterrows():
-            if tuple(row[:-1]) == tuple(rule[:-2]):
+            if tuple(rule[:-2]) == tuple(row[:-1]):
                 return rule
 
         row['Type'] = -1
+        row['Owning Degree'] = 0
+
         return row
 
     def classify_dataset(self):
@@ -21,17 +32,11 @@ class Classifier:
         return self.classified_df
 
     def verify_classification(self):
+        matched = self.fuzzy_df[self.fuzzy_df.isin(
+            self.classified_df[:-1])].dropna()
 
-        # matched = self.fuzzy_df[self.fuzzy_df.isin(
-        #     self.classified_df)].dropna()
+        TP_value = len(matched)
 
-        # TP_value = len(matched)
-
-        matched = pd.merge(self.fuzzy_df, self.classified_df,
-                           how='left', on=list(self.fuzzy_df.columns), indicator='Exist').loc[lambda x:x['Exist'] != 'both']
-
-        del matched['Exist']
-
-        TP_value = len(self.fuzzy_df) - len(matched)
+        print(TP_value)
 
         return TP_value, matched
