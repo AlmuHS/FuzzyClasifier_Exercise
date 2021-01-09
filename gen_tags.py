@@ -5,7 +5,7 @@ class genTags:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-    def calculate_row_means(self):
+    def calculate_column_means(self):
         return self.df.mean()
 
         '''
@@ -44,15 +44,15 @@ class genTags:
         return ranges_dict
 
         '''
-        Set the tags for each row of the dataset, calculating its subranges.
+        Set the tags for each variable of the dataset, calculating its subranges.
         Due to the context of the dataset is unknown, all variables will use the same tags: Low, Medium and High
         '''
 
     def set_tags(self):
         tags = dict()
-        mean_df = self.calculate_row_means()
+        mean_df = self.calculate_column_means()
 
-        for row in self.df.keys()[:-1]:
-            tags[row] = self.calculate_tag_ranges(mean_df, row)
+        for variable in self.df.keys()[:-1]:
+            tags[variable] = self.calculate_tag_ranges(mean_df, variable)
 
         return tags

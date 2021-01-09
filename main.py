@@ -26,5 +26,5 @@ TP_value, results = classifier.verify_classification()
 
 accuraccy = TP_value/len(df)
 
-print(accuraccy)
-print(best_rules_gen)
+print(f"Full dataset accuraccy: {accuraccy}")
+print(f"Minimal rules set: \n{best_rules_gen}")

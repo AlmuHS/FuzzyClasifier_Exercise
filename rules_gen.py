@@ -13,8 +13,8 @@ class RulesGenerator:
     Get a initial rules set, fuzzifying a examples set
     '''
 
-    def get_initial_rules(self, training_df: pd.DataFrame, tags_ranges: dict):
-        fuzzifier = FuzGen(training_df)
+    def get_initial_rules(self, examples_df: pd.DataFrame, tags_ranges: dict):
+        fuzzifier = FuzGen(examples_df)
         rules_df = fuzzifier.fuzzify_rules(tags_ranges)
 
         return rules_df
@@ -24,7 +24,7 @@ class RulesGenerator:
     same predecesors
     '''
 
-    def calculate_certainty_degree(self, rule: pd.DataFrame, rules_gr: pd.DataFrame):
+    def _calculate_certainty_degree(self, rule: pd.DataFrame, rules_gr: pd.DataFrame):
         own_degree_class = 0
 
         # Sum the Owning Degree of all rules with same predecesors and type
@@ -47,22 +47,22 @@ class RulesGenerator:
     From a rules set, select the best rules; selecting a unique rule for each predecesors set
     '''
 
-    def reduce_rules(self, training_df: pd.DataFrame, tags_ranges: dict, initial=True):
+    def reduce_rules(self, rules_df: pd.DataFrame, tags_ranges: dict, initial=True):
 
         if not initial:
-            training_df = self.get_initial_rules(training_df, tags_ranges)
+            rules_df = self.get_initial_rules(rules_df, tags_ranges)
 
-        best_rules_df = pd.DataFrame(columns=training_df.columns)
+        best_rules_df = pd.DataFrame(columns=rules_df.columns)
 
         '''
         Select the rules most repeated in the examples set
         Group the rules which match in all their predecesors and, for each of them, select the rule with highest certain degree
         '''
-        for values, dup_terms_sg in training_df.groupby(training_df.columns.tolist()[:-2], as_index=False):
+        for values, dup_terms_sg in rules_df.groupby(rules_df.columns.tolist()[:-2], as_index=False):
 
             # Calculate the Certain Degree for each rule of the group
             certain_rules = dup_terms_sg.apply(
-                lambda x: self.calculate_certainty_degree(x, dup_terms_sg), axis=1)
+                lambda x: self._calculate_certainty_degree(x, dup_terms_sg), axis=1)
 
             # Select the rule with maximum Certain Degree
             max_certain = certain_rules["Certain Degree"].max()
@@ -126,7 +126,7 @@ class RulesGenerator:
 
             This will allows to distinct the best rules, which have been matched more times
             '''
-            for j, training_df in enumerate(training_set):
+            for training_df in training_set:
                 # Fuzzify training partition
                 fuzzifier = FuzGen(training_df)
                 fuzzy_df = fuzzifier.fuzzify_data(tags_ranges)
@@ -160,8 +160,8 @@ class RulesGenerator:
             # Calculate accuraccy, as the division between the positives rate (matches) and the length of test set
             accuraccy = (TP_value / len(test_df))
 
-            print(accuraccy)
+            print(f"Test {i} accuraccy: {accuraccy}")
 
-        print(len(best_rulesset))
+        print(f"Lenght of minimal rules set: {len(best_rulesset)}")
 
         return best_rulesset

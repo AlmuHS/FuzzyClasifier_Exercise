@@ -1,10 +1,14 @@
 import pandas as pd
-from more_itertools import pairwise
 
 
 class Fuzzyfier:
     def __init__(self, df: pd.DataFrame):
         self.df = df
+
+    '''
+    Calculates the owning degree of a value to a specific tag.
+    Receives as parameter the discrete value, and the tag range (with the min and max of the tag)
+    '''
 
     def calculate_owning_degree(self, value: float, tag_range: list):
         own_degree = 0
@@ -26,13 +30,13 @@ class Fuzzyfier:
         return own_degree
 
     '''
-    Select the best tag for a key, based in its discrete value and the ranges of each tag.
+    Select the best tag for a discrete value, based in its discrete value and the ranges of each tag.
     Compare the discrete value with the range of each tag, calculation the owning degree for each.
     
     Select the tag with the higher association degree. 
     '''
 
-    def select_tag_for_rule(self, value: float, tags_ranges: dict):
+    def select_tag_for_value(self, value: float, tags_ranges: dict):
         max_own_degree = 0
         best_tag = "Low"
 
@@ -63,8 +67,13 @@ class Fuzzyfier:
 
         return rule
 
+    '''
+    Select the best tag for a data example. Use the same criteria than
+    the rules, but discarding the "Owning Degree" column
+    '''
+
     def select_tag_for_data(self, value: float, tags_ranges: dict):
-        tag, degree = self.select_tag_for_rule(value, tags_ranges)
+        tag, degree = self.select_tag_for_value(value, tags_ranges)
 
         return tag
 
@@ -80,7 +89,7 @@ class Fuzzyfier:
         for key in keys[:-1]:
             tag_range = tags_ranges[key]
             fuzzy_df[key] = self.df[key].apply(
-                lambda x: self.select_tag_for_rule(x, tag_range))
+                lambda x: self.select_tag_for_value(x, tag_range))
 
         fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
 
