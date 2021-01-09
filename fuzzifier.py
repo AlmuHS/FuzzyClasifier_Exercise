@@ -91,7 +91,9 @@ class Fuzzyfier:
             fuzzy_df[key] = self.df[key].apply(
                 lambda x: self.select_tag_for_value(x, tag_range))
 
-        fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
+        #fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
+        type_str = keys[-1]
+        fuzzy_df[type_str] = self.df[type_str].copy(deep=False)
 
         fuzzy_df = fuzzy_df.apply(
             lambda x: self.calculate_rule_owning_degree(x), axis=1)
@@ -112,6 +114,9 @@ class Fuzzyfier:
             fuzzy_df[key] = self.df[key].apply(
                 lambda x: self.select_tag_for_data(x, tag_range))
 
-        fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
+        type_str = keys[-1]
+
+        #fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
+        fuzzy_df[type_str] = self.df[type_str].copy(deep=False)
 
         return fuzzy_df

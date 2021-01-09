@@ -11,7 +11,8 @@ class Classifier:
             if tuple(rule[:-2]) == tuple(row[:-1]):
                 return rule
 
-        row['Type'] = -1
+        #row['Type'] = -1
+        row.iloc[-2] = -1
         row['Owning Degree'] = 0
 
         return row
