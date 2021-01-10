@@ -4,6 +4,7 @@ import gc
 
 class Classifier:
     def __init__(self, fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
+        self.fuzzy_df = pd.DataFrame(dtype='category')
         self.fuzzy_df = fuzzy_df
         self.rules_df = rules_df
         gc.enable()

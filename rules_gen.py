@@ -77,6 +77,8 @@ class RulesGenerator:
             best_rules_df = best_rules_df.append(
                 best_rule.drop(['Certain Degree']))
 
+            best_rules_df = best_rules_df.astype('int8', copy=False)
+
         # call to garbage collector, to clean unused memory
         gc.collect()
         rules_df = None
@@ -112,6 +114,7 @@ class RulesGenerator:
         # Initialize the best rulesset using full dataset
         best_rulesset = pd.DataFrame()
         best_rulesset = self.get_initial_rules(self.df, tags_ranges)
+        best_rulesset = best_rulesset[:-1].astype('int8', copy=False)
 
         # Set original dataframe to None, to free memory
         self.df = None
@@ -168,7 +171,6 @@ class RulesGenerator:
 
             # Filter the best rules, removing repeated antecesors
             best_rulesset = self.reduce_rules(best_rulesset, tags_ranges)
-            #self.reduce_rules(best_rulesset, tags_ranges)
 
             # Try to classify the test set with the rules set get from training
             classifier = Classifier(test_df, best_rulesset)
