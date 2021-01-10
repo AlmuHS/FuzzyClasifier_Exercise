@@ -55,4 +55,6 @@ class genTags:
         for variable in self.df.keys()[:-1]:
             tags[variable] = self.calculate_tag_ranges(mean_df, variable)
 
+        self.df = None
+
         return tags

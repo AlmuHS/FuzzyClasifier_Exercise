@@ -1,10 +1,12 @@
 import pandas as pd
+import gc
 
 
 class Classifier:
     def __init__(self, fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
         self.fuzzy_df = fuzzy_df
         self.rules_df = rules_df
+        gc.enable()
 
     def select_type(self, row: tuple):
         for i, rule in self.rules_df.iterrows():
@@ -21,6 +23,10 @@ class Classifier:
         self.classified_df = self.fuzzy_df.apply(
             lambda x: self.select_type(x), axis=1)
 
+        self.rules_df = None
+
+        gc.collect()
+
         return self.classified_df
 
     def verify_classification(self):
@@ -28,6 +34,11 @@ class Classifier:
         matched = self.classified_df.loc[(self.classified_df[keys]
                                           == self.fuzzy_df[keys]).all(axis="columns")]
 
+        self.fuzzy_df = None
+        self.classified_df = None
+
         TP_value = len(matched)
+
+        gc.collect()
 
         return TP_value, matched

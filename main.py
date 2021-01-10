@@ -1,4 +1,5 @@
 import pandas as pd
+import gc
 from rules_gen import RulesGenerator as RulesGen
 from fuzzifier import Fuzzyfier as FuzGen
 from gen_tags import genTags as gt
@@ -10,6 +11,8 @@ def load_data(filename: str):
 
     return df
 
+
+gc.enable()
 
 pd.set_option('display.max_rows', None)
 #df = load_data("glass.csv")

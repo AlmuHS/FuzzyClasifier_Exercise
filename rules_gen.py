@@ -1,4 +1,5 @@
 import pandas as pd
+import gc
 from fuzzifier import Fuzzyfier as FuzGen
 from gen_tags import genTags as gt
 from partitioner import Partitioner as Part
@@ -8,6 +9,7 @@ from classifier import Classifier
 class RulesGenerator:
     def __init__(self, df: pd.DataFrame):
         self.df = df
+        gc.enable()
 
     '''
     Get a initial rules set, fuzzifying a examples set
@@ -69,9 +71,15 @@ class RulesGenerator:
             best_rule = certain_rules[certain_rules["Certain Degree"]
                                       == max_certain].iloc[0]
 
+            certain_rules = None
+
             # Add the selected rule to the best rules set. Remove the Certain Degree column before add the rule
             best_rules_df = best_rules_df.append(
                 best_rule.drop(['Certain Degree']))
+
+        # call to garbage collector, to clean unused memory
+        gc.collect()
+        rules_df = None
 
         return best_rules_df
 
@@ -93,7 +101,6 @@ class RulesGenerator:
     '''
 
     def start_rules_training(self):
-
         # Generate the tags for the values range
         gen_tags = gt(self.df)
         tags_ranges = gen_tags.set_tags()
@@ -105,6 +112,9 @@ class RulesGenerator:
         # Initialize the best rulesset using full dataset
         best_rulesset = pd.DataFrame()
         best_rulesset = self.get_initial_rules(self.df, tags_ranges)
+
+        # Set original dataframe to None, to free memory
+        self.df = None
 
         # Train the rules with all posible combinations of training and test partitions
         for i in range(0, len(partition_set) - 1):
@@ -119,6 +129,9 @@ class RulesGenerator:
             # Fuzzify the data from the test set
             fuzzifier = FuzGen(test_set)
             test_df = fuzzifier.fuzzify_data(tags_ranges)
+
+            # Set to None to free memory
+            test_set = None
 
             '''
             Deal each training set with the rules set, to get the best rules set.
@@ -141,6 +154,12 @@ class RulesGenerator:
                 # Concatenate the matched rules to the current best rules set
                 best_rulesset = pd.concat([best_rulesset, matched_rules])
 
+                # Set to None to free memory
+                matched_rules = None
+
+                # Call to garbage collector, to clean unused memory
+                gc.collect()
+
             '''
             Once get the matched rules over the initial set, test the rules set over the test partition
             Before this, apply a filter to select only a rule for each antecesors set, based in the matches
@@ -149,6 +168,7 @@ class RulesGenerator:
 
             # Filter the best rules, removing repeated antecesors
             best_rulesset = self.reduce_rules(best_rulesset, tags_ranges)
+            #self.reduce_rules(best_rulesset, tags_ranges)
 
             # Try to classify the test set with the rules set get from training
             classifier = Classifier(test_df, best_rulesset)
@@ -157,10 +177,16 @@ class RulesGenerator:
             # Check classification results
             TP_value, matched_rules = classifier.verify_classification()
 
+            # Set to None to free memory
+            matched_rules = None
+
             # Calculate accuraccy, as the division between the positives rate (matches) and the length of test set
             accuraccy = (TP_value / len(test_df))
 
             print(f"Test {i} accuraccy: {accuraccy}")
+
+            # Call to garbage collector, to clean unused memory
+            gc.collect()
 
         print(f"Lenght of minimal rules set: {len(best_rulesset)}")
 

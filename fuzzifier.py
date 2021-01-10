@@ -98,6 +98,8 @@ class Fuzzyfier:
         fuzzy_df = fuzzy_df.apply(
             lambda x: self.calculate_rule_owning_degree(x), axis=1)
 
+        #self.df = None
+
         return fuzzy_df
 
     '''
@@ -118,5 +120,7 @@ class Fuzzyfier:
 
         #fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
         fuzzy_df[type_str] = self.df[type_str].copy(deep=False)
+
+        #self.df = None
 
         return fuzzy_df
