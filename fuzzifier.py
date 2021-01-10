@@ -38,7 +38,9 @@ class Fuzzyfier:
 
     def select_tag_for_value(self, value: float, tags_ranges: dict):
         max_own_degree = 0
-        best_tag = "Low"
+
+        tag_code = {"Low": 1, "Medium": 2, "High": 3}
+        best_tag = tag_code["Low"]
 
         for tag in ["Low", "Medium", "High"]:
             tag_range = tags_ranges[tag]
@@ -48,7 +50,7 @@ class Fuzzyfier:
 
             if own_degree > max_own_degree:
                 max_own_degree = own_degree
-                best_tag = tag
+                best_tag = tag_code[tag]
 
         return best_tag, max_own_degree
 
@@ -95,10 +97,14 @@ class Fuzzyfier:
         type_str = keys[-1]
         fuzzy_df[type_str] = self.df[type_str].copy(deep=False)
 
+        # Copy Type (class) column to fuzzy dataframe
         fuzzy_df = fuzzy_df.apply(
             lambda x: self.calculate_rule_owning_degree(x), axis=1)
 
-        #self.df = None
+        # Casting type to int
+        fuzzy_df = fuzzy_df[:-1].astype('int8', copy=False)
+
+        self.df = None
 
         return fuzzy_df
 
@@ -109,18 +115,19 @@ class Fuzzyfier:
 
     def fuzzify_data(self, tags_ranges: dict):
         keys = self.df.columns
-        fuzzy_df = pd.DataFrame()
+
+        # Create a new dataframe, setting int as default type
+        fuzzy_df = pd.DataFrame(dtype='int8')
 
         for key in keys[:-1]:
             tag_range = tags_ranges[key]
             fuzzy_df[key] = self.df[key].apply(
                 lambda x: self.select_tag_for_data(x, tag_range))
 
-        type_str = keys[-1]
+        # Copy Type (class) column to fuzzy dataframe
+        type_column = keys[-1]
+        fuzzy_df[type_column] = self.df[type_column].copy(deep=False)
 
-        #fuzzy_df['Type'] = self.df['Type'].copy(deep=False)
-        fuzzy_df[type_str] = self.df[type_str].copy(deep=False)
-
-        #self.df = None
+        self.df = None
 
         return fuzzy_df
