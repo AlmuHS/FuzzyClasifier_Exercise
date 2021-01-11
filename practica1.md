@@ -291,10 +291,58 @@ Haciendo diferentes pruebas, notamos como el algoritmo de selección de reglas t
 
 - Moviendo la selección de reglas al bucle de entrenamiento, la precisión varía entre un 53% y un 81%, con valores de moda de 67% y 74%.  La precisión sobre el conjunto final es de un 69%.
 
-### Resumen
+### Tabla resumen
 
+|| Precisión mínima (%) | Precisión máxima (%) | Precisión conjunto final (%) | Precisión moda (%) |
+|-- |-- | -- | -- | -- |
+| Con entrenamiento y selección de reglas | 65 | 80 | 69 | N/A
+| Sin bucle de entrenamiento | 62 | 86 | 71 | 70 - 80 |
+| Sin selección de reglas | 50 | 72 | 65 | N/A
+ | Sin aprendizaje | N/A | N/A | 65 | N/A
+ | Selección de reglas durante entrenamiento | 53 | 81 | 69 | 67 - 74 
 
+## Problemas encontrados
 
+La versión actual tiene un consumo de recursos elevado, especialmente en el caso de la memoria. Esto nos ha impedido ejecutar el clasificador sobre el fichero de datos CovType. Aunque el diseño del programa permite su ejecución, el consumo elevado de memoria que supone supera los recursos de nuestro equipo informático (16 GB de RAM)
+
+### Mejoras
+
+Aplicando ciertas modificaciones, se ha logrado reducir considerablemente el consumo de memoria. 
+
+- **Conversión de la representación de las etiquetas a tipo int8:** La representación de las etiquetas mediante cadenas de caracteres supone un consumo elevado de memoria. Cambiando dicha representación por una basada en números enteros de 8 bits, se puede reducir dicho consumo, además de simplificar el procesamiento. 
+
+- **Establecimiento a tipo _None_ de las estructuras que han dejado de utilizarse:** Esto permite que el recolector de basura los identifique mas rápidamente, permitiendo liberar sus recursos.
+
+- **Invocación manual del recolector de basura : ** Invocando a dicho recolector manualmente, aceleramos la liberación de los recursos de memoria, ralentizando el aumento del consumo del memoria, y reduciendo el consumo global. 
+
+Con dicha versión, el consumo de memoria con el conjunto de datos CovType se reduce a 5 GB de pico. Aunque aún los tiempos de acceso a memoria ralentizan en gran medida la ejecución, cuya primera iteración de entrenamiento no llegó a terminar tras 3 horas de ejecución. 
+
+Dicha versión se puede descargar en la rama wip del [repositorio del proyecto](https://github.com/AlmuHS/FuzzyClasifier_Exercise/tree/wip
+)
+
+### Otras mejoras
+
+Como otra posible mejora, se ha intentado compilar el proyecto en C, utilizando para ello la herramienta `nuitka`. Por desgracia, el consumo de memoria se ha mantenido elevado, y no se ha apreciado una mejora notable en los tiempos de ejecución.
+
+### Posibles soluciones
+
+Para solucionar este problema, se plantean varias alternativas:
+
+- **Reemplazo de la librería Pandas por NumPy: ** Pandas es una librería muy versátil, pero por desgracia obliga a realizar muchas copias del dataframe durante el procesamiento, lo cual puede elevar fácilmente el consumo de memoria. NumPy permite operar con matrices y arrays numéricos, ofreciendo una mayor escalabilidad en este tipo de operaciones. Por esta razón, el cambio a esta librería podría mejorar el consumo de memoria.
+
+- **Reimplementación del proyecto en C++:** Python incluye muchas librerías para el procesamiento de conjuntos de datos de forma sencilla. Por desgracia, su ejecución supone unos tiempos mas elevados, además de que su gestión de memoria puede ser problemática en casos como este. C++ permite una gestión mas fina de la memoria, liberando recursos en cuánto termina su ámbito de ejecución, e incluso permitiendo la liberación manual de los recursos del *heap*. Esto podría ayudar a reducir el consumo de memoria de nuestro programa. A cambio, la implementación podría resultar bastante mas complicada, requiriendo mas tiempo de desarrollo para la misma.
+
+## Conclusiones
+
+La implementación del clasificador, aunque simple, resulta bastante eficaz, obteniendo buenos resultados de precisión, con un conjunto de reglas bastante reducido (61 reglas de 215 ejemplos). Incluso, se ha logrado mejorar ligeramente la precisión respecto al conjunto de reglas basado en el dataset completo.
+
+Esta implementación ha supuesto varios desafíos, como pudieran ser la generación de las particiones de las etiquetas, la selección de la etiqueta mas apropiada para un valor discreto (en caso de que perteneciera al rango de valores de varias de ellas), y la reducción del conjunto de reglas mediante un algoritmo de selección para reglas con  antecedentes comunes. Estos se han solucionado mediante el uso de algorítmica sencilla y ciertos cálculos matemáticos. 
+
+Aunque no se ha implementado la reducción de variables dentro de las reglas (todas las reglas utilizan todas las variables del conjunto), el resultado es bastante positivo. Para la reducción de reglas se han probado múltiples enfoques, como la selección del consecuente mas repetido, o la selección de las reglas con mayor grado de certeza; aunque finalmente hemos optado por este último. Esto nos ha asegurado tener una única regla por cada conjunto de antecedentes, a la vez que mantenemos una gran fidelidad en la selección de dicha regla, evitando la reducción de precisión del clasificador.
+
+A nivel general, la parte mas complicada ha sido entender los algoritmos y el procedimiento a seguir, mas aún que la propia implementación de la práctica que, aunque laboriosa, ha sido relativamente sencilla. La falta de comprensión de algunos de los algoritmos, ha obligado a realizar varias refactorizaciones durante el desarrollo del proyecto, que iba modificándose conforme se iban descubriendo nuevos detalles de cada algoritmo.
+
+En definitiva, es una práctica relativamente simple de implementar, pero con unos planteamientos algo difíciles de entender.
 
 ## Referencias
 
