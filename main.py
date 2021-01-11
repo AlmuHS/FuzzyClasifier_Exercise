@@ -1,5 +1,9 @@
+import pandas._libs.tslibs.base
 import pandas as pd
+import sys
 import gc
+
+
 from rules_gen import RulesGenerator as RulesGen
 from fuzzifier import Fuzzyfier as FuzGen
 from gen_tags import genTags as gt
@@ -15,10 +19,10 @@ def load_data(filename: str):
 gc.enable()
 
 pd.set_option('display.max_rows', None)
-#df = load_data("glass.csv")
-df = load_data("covtype.csv")
 
-#df = df.memory_usage()
+filename = sys.argv[1]
+df = load_data(filename)
+#df = load_data("covtype.csv")
 
 tags_ranges = gt(df).set_tags()
 
