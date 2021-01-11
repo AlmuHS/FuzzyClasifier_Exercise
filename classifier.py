@@ -4,7 +4,6 @@ import gc
 
 class Classifier:
     def __init__(self, fuzzy_df: pd.DataFrame, rules_df: pd.DataFrame):
-        self.fuzzy_df = pd.DataFrame(dtype='category')
         self.fuzzy_df = fuzzy_df
         self.rules_df = rules_df
         gc.enable()
@@ -14,7 +13,7 @@ class Classifier:
             if tuple(rule[:-2]) == tuple(row[:-1]):
                 return rule
 
-        #row['Type'] = -1
+        # Set type to -1
         row.iloc[-2] = -1
         row['Owning Degree'] = 0
 
